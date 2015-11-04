@@ -94,8 +94,64 @@ import MyComponent = require('./myComponent');
 <SomeOtherComponent />; // error  
 ```
 
-我们是可以限制自定义类型元素的类型的。然而，为了说明白，我们先要介绍两个概念：*元素类型*和*元素实例类型*。
+我们是可以限制自定义元素的类型的。然而，为了说明白，我们先要介绍两个概念：*元素类类型(Element Class Type)*和*元素实例类型(Element Instance Type)*。
 
-元素类型很简单，给定的 `<Expr>` 组件，类型就是 `Expr` 的类型。所以在上面的例子中，如果 `MyCompoent` 是一个 ES6 的类，那么 `<MyComponent>` 的类型就是这个类。如果 `MyComponent` 是一个工厂方法，那么 `<MyCompoent>` 的类型就是这个方法。
+元素类类型很简单，对于 `<Expr>` 组件，类类型就是 `Expr` 的类型。所以在上面的例子中，如果 `MyCompoent` 是一个 ES6 的类，那么 `<MyComponent>` 的类类型就是这个类。如果 `MyComponent` 是一个工厂方法，那么 `<MyCompoent>` 的类类型就是这个方法。
 
-一旦元素类型确定了，
+一旦元素类类型确定了，元素的实例类型就由类的调用签名和构造签名共同决定。在看上述例子，如果 `MyComponent` 是一个 ES6 的类，那么实例类型就是这个类的实例的类型，如果是个工厂方法，实例类型则是这个方法的返回值。是不是有点绕？我们来看看下面这个例子：
+
+```tsx
+class MyComponent {  
+  render() {}
+}
+
+// 使用构造函数
+var myComponent = new MyComponent();
+
+// 元素类类型 => MyComponent
+// 元素示例类型 => { render: () => void }
+
+function MyFactoryFunction() {  
+  return { 
+    render: () => {
+    } 
+  }
+}
+
+// 使用工厂方法调用
+var myComponent = MyFactoryFunction();
+
+// 元素类类型 => FactoryFunction
+// 元素实例类型 => { render: () => void }
+```
+
+现在元素实例类型是一个有趣的类型，它要求满足 `JSX.ElementClass` 的接口，否则将会报错。默认情况下，`JSX.ElementClass` 就是 `{}`，不过我们是可以认为增加限制，让它适应 JSX 的接口。
+
+```tsx
+declare module JSX {  
+  interface ElementClass {
+    render: any;
+  }
+}
+
+class MyComponent {  
+  render() {}
+}
+function MyFactoryFunction() {  
+  return { render: () => {} }
+}
+
+<MyComponent />; // ok  
+<MyFactoryFunction />; // ok
+
+class NotAValidComponent {}  
+function NotAValidFactoryFunction() {  
+    return {};
+}
+
+<NotAValidComponent />; // error  
+<NotAValidFactoryFunction />; // error  
+```
+
+*译者注：`JSX.ElementClass` 同样[在 DefinitelyTyped 中定义好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1898-L1900)，大家通过 tsd 或者 nuget 可以下载下来使用*
+
