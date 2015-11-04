@@ -5,12 +5,12 @@
 
 ## 发展历史
 
-当我们开始在 [AssureSign](https://www.assuresign.com/) 项目中实验性地使用 React 的时候，已经走到了 TypeScript 的路子上。然而当我们碰到 JSX 的时候，一道石墙突然在我们面前挡道。在 [Github 中已经有一个历史悠久的 Issue](https://github.com/facebook/react/issues/759) 去反映这个问题，然而一直没有得出实质性的解决方案，或者干脆让你“不要使用 JSX”了。这对我来说不可接受，所以我[用了一点黑魔法](https://github.com/facebook/react/issues/759#issuecomment-40954893)来解决这个问题。虽然可以玩起来，然而这个方法太挫了，并且没有类型检查。[François de Campredon](https://twitter.com/fdecampredon) 后来创建了一个 [jsx-typescript](https://github.com/fdecampredon/jsx-typescript) 的项目来证明其实 TypeScript 是可以支持 JSX 的。然后，很突然，[会得到 TypeScript 官方支持](https://github.com/Microsoft/TypeScript/issues/296#issuecomment-89266813)的说法就开始起来了。三个月后，它就[真的支持](https://github.com/Microsoft/TypeScript/pull/3564#event-343293342)了。
+当我们开始在 [AssureSign](https://www.assuresign.com/) 项目中实验性地使用 React 的时候，也开始在使用 TypeScript 了。然而当我们碰到 JSX 的时候，一道石墙突然在我们面前挡道。在 [Github 中已经有一个历史悠久的 Issue](https://github.com/facebook/react/issues/759) 去反映这个问题，然而一直没有得出实质性的解决方案，或者干脆让你“不要使用 JSX”了。这对我来说不可接受，所以我[用了一点黑魔法](https://github.com/facebook/react/issues/759#issuecomment-40954893)来解决这个问题。虽然可以玩起来，但这个方法太挫了，并且没有类型检查。[François de Campredon](https://twitter.com/fdecampredon) 后来创建了一个 [jsx-typescript](https://github.com/fdecampredon/jsx-typescript) 的项目来证明其实 TypeScript 是可以支持 JSX 的。然后，很突然，[会得到 TypeScript 官方支持](https://github.com/Microsoft/TypeScript/issues/296#issuecomment-89266813)的消息不胫而走。三个月后，它就[真的支持](https://github.com/Microsoft/TypeScript/pull/3564#event-343293342)了。
 
 ## 安装
 
 ~~目前 JSX 还没有稳定版本，所以你需要去拉取最新代码。~~
-JSX 已经在 TypeScript 1.6 或者更高的版本上支持。
+JSX 已经在 TypeScript 1.6 以上版本支持。
 
 ```sh
 $ npm install typescript
@@ -43,7 +43,7 @@ var foo1 = <foo>bar
 </foo>
 ```
 
-这个代码是准备创建一个 JSX 元素，还是想要声明 `bar` 变量是 `foo` 类型的，而第二行只是个无效表达式？为了让这个问题简化，`.tsx` 文件里不支持尖括号类型声明语法。所以如果上面的代码是在 `.tsx` 文件里的话，表示的是创建了一个 JSX 元素，而如果在 `.ts` 文件里，就会报错。为了弥补 `.tsx` 文件中类型声明语法的缺失，添加了一个新的类型声明操作符：`as`。
+这个代码是准备创建一个 JSX 元素，还是想要声明 `bar` 变量是 `foo` 类型的？为了让这个问题简化，`.tsx` 文件里不支持尖括号类型声明语法。所以如果上面的代码是在 `.tsx` 文件里的话，表示的是创建了一个 JSX 元素，而如果在 `.ts` 文件里，就会报错。为了弥补 `.tsx` 文件中类型声明语法的缺失，添加了一个新的类型声明操作符：`as`。
 
 ```tsx
 var foo1 = bar as foo;
@@ -64,7 +64,7 @@ var foo1 = bar as foo;
 
 ## 内置元素
 
-内置元素会在接口 `JSX.InterinsicElements` 中定义。默认情况下，如果这个接口并没有定义，那么所有的内置元素都不会进行类型检查。然而，如果你定义了这个接口，那么内置元素将会在接口的属性中定义。
+内置元素会在接口 `JSX.InterinsicElements` 中定义。默认情况下，如果这个接口并没有定义，那么所有的内置元素都不会进行类型检查。然而，如果你定义了这个接口，那么内置元素将会使用在接口属性中定义的类型。
 
 ```tsx
 declare module JSX {  
@@ -77,11 +77,11 @@ declare module JSX {
 <bar />; // error  
 ```
 
-在上述示例中，`foo` 可以通过类型检查但是 `bar` 不行。因为 `bar` 并没有在内置元素接口中定义到。
+在上述示例中，`foo` 可以通过类型检查但是 `bar` 不行。因为 `bar` 在内置元素接口属性中没有定义。
 
 *注意：你也可以在 `JSX.IntrinsicElements` 接口中定义一个字符串索引器来匹配任意的内置元素*
 
-> 笔者注：`JSX.IntrinsicElements` 在 Dom 环境中的定义[已经在 DefinitelyTyped 中描述好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1903-L2037)。大家可以直接使用。
+> 笔者注：`JSX.IntrinsicElements` 在 Dom 环境中的定义[已经在 React 的 DefinitelyTyped 中描述好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1903-L2037)。React 环境下可直接使用。
 
 ## 自定义元素
 
@@ -96,7 +96,7 @@ import MyComponent = require('./myComponent');
 
 我们是可以限制自定义元素的类型的。然而，为了说明白，我们先要介绍两个概念：*元素类类型(Element Class Type)*和*元素实例类型(Element Instance Type)*。
 
-元素类类型很简单，对于 `<Expr>` 组件，类类型就是 `Expr` 的类型。所以在上面的例子中，如果 `MyCompoent` 是一个 ES6 的类，那么 `<MyComponent>` 的类类型就是这个类。如果 `MyComponent` 是一个工厂方法，那么 `<MyCompoent>` 的类类型就是这个方法。
+元素类类型很简单，对于 `<Expr>` 组件，其类类型就是 `Expr` 的类型。所以在上面的例子中，如果 `MyCompoent` 是一个 ES6 的类，那么 `<MyComponent>` 的类类型就是这个类。如果 `MyComponent` 是一个工厂方法，那么 `<MyCompoent>` 的类类型就是这个方法。
 
 一旦元素类类型确定了，元素的实例类型就由类的调用签名和构造签名共同决定。在看上述例子，如果 `MyComponent` 是一个 ES6 的类，那么实例类型就是这个类的实例的类型，如果是个工厂方法，实例类型则是这个方法的返回值。是不是有点绕？我们来看看下面这个例子：
 
@@ -125,7 +125,7 @@ var myComponent = MyFactoryFunction();
 // 元素实例类型 => { render: () => void }
 ```
 
-现在元素实例类型是一个有趣的类型，它要求满足 `JSX.ElementClass` 的接口，否则将会报错。默认情况下，`JSX.ElementClass` 就是 `{}`，不过我们是可以认为增加限制，让它适应 JSX 的接口。
+现在元素实例类型是一个有趣的类型，它要求满足 `JSX.ElementClass` 的接口，否则将会报错。默认情况下，`JSX.ElementClass` 就是 `{}`，不过我们是可以人为增加限制。
 
 ```tsx
 declare module JSX {  
@@ -153,13 +153,13 @@ function NotAValidFactoryFunction() {
 <NotAValidFactoryFunction />; // error  
 ```
 
-*译者注：`JSX.ElementClass` 同样[在 DefinitelyTyped 中定义好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1898-L1900)，大家通过 tsd 或者 nuget 可以下载下来使用*
+*译者注：`JSX.ElementClass` 同样[在 React 的 DefinitelyTyped 中定义好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1898-L1900)，大家通过 tsd 或者 nuget 可以下载下来使用*
 
 ## 属性类型检查
 
-做属性的类型检查，第一部就是要确定*元素属性类型*。对于内置元素和自定义元素，确定方式有一些区别。
+做属性的类型检查，第一步就是要确定*元素属性类型*。对于内置元素和自定义元素，确定方式有一些区别。
 
-对于内置类型，就是 `JSX.IntrinsicElements` 上的属性类型。
+对于内置类型，元素属性类型就是 `JSX.IntrinsicElements` 上的属性类型。
 
 ```tsx
 declare module JSX {  
@@ -223,7 +223,7 @@ var badProps = {};
 
 ## JSX 的类型
 
-好了，现在我们可以写 JSX 并且有了元素和属性的类型检查，但是 JSX 本身的类型是什么呢？默认来说，JSX 的类型是 `any`。你可以通过 `JSX.Element` 接口自定义这个类型。然而，我们从这个接口是不可能知道元素、元素的或者子节点的类型信息的。这是个黑盒。
+好了，现在我们可以写 JSX 并且有了元素和属性的类型检查，但是 JSX 本身的类型是什么呢？默认来说，JSX 的类型是 `any`。你可以通过 `JSX.Element` 接口自定义这个类型。然而，我们从这个接口是不可能知道元素、元素的属性或者子节点的类型信息的。这是个黑盒。
 
 ## 内嵌 TypeScript
 
