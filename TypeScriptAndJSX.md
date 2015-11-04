@@ -155,3 +155,122 @@ function NotAValidFactoryFunction() {
 
 *译者注：`JSX.ElementClass` 同样[在 DefinitelyTyped 中定义好了](https://github.com/borisyankov/DefinitelyTyped/blob/master/react/react.d.ts#L1898-L1900)，大家通过 tsd 或者 nuget 可以下载下来使用*
 
+## 属性类型检查
+
+做属性的类型检查，第一部就是要确定*元素属性类型*。对于内置元素和自定义元素，确定方式有一些区别。
+
+对于内置类型，就是 `JSX.IntrinsicElements` 上的属性类型。
+
+```tsx
+declare module JSX {  
+  interface IntrinsicElements {
+    foo: { bar?: boolean }
+  }
+}
+
+// `foo` 的元素属性类型是 `{bar?: boolean}`
+<foo bar />;  
+```
+
+对于自定义元素，情况复杂一点点。它的类型是之前讨论的*元素实例类型*的一个属性决定的。你问我是哪个属性？哈哈，你可以自己决定！在 `JSX.ElementAttributesProperty` 上定义唯一一个属性，这个属性就是决定自定义元素属性类型的属性。*（译者：好绕，还是看示例）*
+
+```tsx
+declare module JSX {  
+  interface ElementAttributesProperty {
+    props; // 指定使用哪个属性名称
+  }
+}
+
+class MyComponent {  
+  // 在元素实例类型上定义这个属性
+  props: {
+    foo?: string;
+  }
+}
+
+// `MyComponent` 的元素属性类型就是 `{foo?: string}`
+<MyComponent foo="bar" />  
+```
+
+上面的例子可以明显看到，元素属性类型就是用于对 JAX 的元素做类型检查的。支持可选和必选属性。
+
+```tsx
+declare module JSX {  
+  interface IntrinsicElements {
+    foo: { requiredProp: string; optionalProp?: number }
+  }
+}
+
+<foo requiredProp="bar" />; // ok  
+<foo requiredProp="bar" optionalProp={0} />; // ok  
+<foo />; // error, requiredProp is missing  
+<foo requiredProp={0} />; // error, requiredProp should be a string  
+<foo requiredProp="bar" unknownProp />; // error, unknownProp does not exist  
+<foo requiredProp="bar" some-unknown-prop />; // ok, because `some-unknown-prop` is not a valid identifier  
+```
+
+*注意：如果一个属性名称不是一个合法的 JS 标识符（比如 `data-*` 属性），那么这个属性在进行类型检查的时候不会认为是错误，而是直接跳过。*
+
+属性集也是支持的：
+
+```tsx
+var props = { requiredProp: 'bar' };  
+<foo {...props} />; // ok
+
+var badProps = {};  
+<foo {...badProps} />; // error  
+```
+
+## JSX 的类型
+
+好了，现在我们可以写 JSX 并且有了元素和属性的类型检查，但是 JSX 本身的类型是什么呢？默认来说，JSX 的类型是 `any`。你可以通过 `JSX.Element` 接口自定义这个类型。然而，我们从这个接口是不可能知道元素、元素的或者子节点的类型信息的。这是个黑盒。
+
+## 内嵌 TypeScript
+
+JSX 在 Javascript 里允许通过花括号 `{ }` 内嵌 JavaScript 代码。JSX 在 TypeScript 里同样允许你这样做，只不过是内嵌 TypeScript 代码。这就意味着这些 JSX 内嵌的 TypeScript 代码同样支持转译功能以及类型检查。
+
+```tsx
+var a = <div>  
+  {['foo', 'bar'].map(i => <span>{i/2}</span>)}
+</div>
+```
+
+上面的代码会报错，因为你不能使用字符串来除以一个数值。当使用 `preserve` 模式的时候，输出是这样的：
+
+```tsx
+var a = <div>  
+  {['foo', 'bar'].map(function (i) { return <span>{i / 2}</span>; })}
+</div>
+```
+
+## React 集成
+
+TypeScript 对 JSX 的支持的设计是不考虑其使用方式的。然而，React 始终是主要的使用方。我年初[做过一个关于集成 React 和 TypeScript 的演讲](https://www.youtube.com/watch?v=9PTa9-PPVAc)。很多观点如今依然适用。[React 的 DefiniteTyped 仓库](https://github.com/borisyankov/DefinitelyTyped/tree/master/react)的最近更新中集成了 `JSX.IntrinsicElements` 和 `JSX.ElementAttributeProperty` 的概念。
+
+```tsx
+/// <reference path="react.d.ts" />
+
+interface Props {  
+  foo: string;
+}
+
+class MyComponent extends React.Component<Props, {}> {  
+  render() {
+    return <span>{this.props.foo}</span>
+  }
+}
+
+<MyComponent foo="bar" />; // ok  
+<MyComponent foo={0} />; // error  
+```
+
+## 更多资源
+
+这篇文章中的很多信息都来自 TypeScript 的 [Issue #3203](https://github.com/Microsoft/TypeScript/issues/3203)。不过，这个讨论已经持续了很长时间并且扩散到很多个地方。我调了几个个人认为值得深挖的：
+
+* http://typescript.codeplex.com/workitem/2608
+* https://github.com/facebook/react/issues/759
+* https://github.com/Microsoft/TypeScript/issues/296
+* https://github.com/Microsoft/TypeScript/pull/3201
+* https://github.com/Microsoft/TypeScript/issues/3203
+* https://github.com/Microsoft/TypeScript/pull/3564
